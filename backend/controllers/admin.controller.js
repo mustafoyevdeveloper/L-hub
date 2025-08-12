@@ -1,4 +1,4 @@
-import { User, Wallet, Round, Ticket, Withdrawal, DepositRequest, Transaction } from '../models.js'
+import { User, Wallet, Round, Ticket, Withdrawal, DepositRequest, Transaction, SupportTicket } from '../models.js'
 
 export async function getDashboardStats(req, res) {
   try {
@@ -164,6 +164,115 @@ export async function getRoundStats(req, res) {
       tickets,
       totalRevenue
     })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export async function assignSupportTicket(req, res) {
+  try {
+    const { ticketId } = req.params
+    const { adminId, status, adminNote } = req.body
+    
+    const ticket = await SupportTicket.findById(ticketId)
+    if (!ticket) {
+      return res.status(404).json({ error: 'Support ticket not found' })
+    }
+    
+    ticket.status = status || ticket.status
+    ticket.adminId = adminId || ticket.adminId
+    ticket.adminNote = adminNote || ticket.adminNote
+    ticket.updatedAt = new Date()
+    
+    await ticket.save()
+    
+    res.json(ticket)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export async function exportData(req, res) {
+  try {
+    const { type, startDate, endDate } = req.query
+    
+    let data = []
+    let filename = ''
+    
+    switch (type) {
+      case 'users':
+        data = await User.find().select('-passwordHash').lean()
+        filename = 'users_export.json'
+        break
+      case 'transactions':
+        const where = {}
+        if (startDate && endDate) {
+          where.createdAt = {
+            $gte: new Date(startDate),
+            $lte: new Date(endDate)
+          }
+        }
+        data = await Transaction.find(where).lean()
+        filename = 'transactions_export.json'
+        break
+      case 'rounds':
+        data = await Round.find().lean()
+        filename = 'rounds_export.json'
+        break
+      default:
+        return res.status(400).json({ error: 'Invalid export type' })
+    }
+    
+    res.setHeader('Content-Type', 'application/json')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.json(data)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export async function processWithdrawal(req, res) {
+  try {
+    const { withdrawalId } = req.params
+    const { action, adminNote } = req.body
+    
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action. Use "approve" or "reject"' })
+    }
+    
+    const withdrawal = await Withdrawal.findById(withdrawalId)
+    if (!withdrawal) {
+      return res.status(404).json({ error: 'Withdrawal not found' })
+    }
+    
+    if (withdrawal.status !== 'PENDING') {
+      return res.status(400).json({ error: 'Already processed' })
+    }
+    
+    if (action === 'approve') {
+      withdrawal.status = 'APPROVED'
+      withdrawal.adminNote = adminNote
+      await withdrawal.save()
+      
+      res.json({ message: 'Withdrawal approved', withdrawal })
+    } else {
+      // Reject and return money to wallet
+      const wallet = await Wallet.findOne({ 
+        userId: withdrawal.userId, 
+        currency: withdrawal.currency 
+      })
+      
+      if (wallet) {
+        wallet.balance += withdrawal.amount
+        await wallet.save()
+      }
+      
+      withdrawal.status = 'REJECTED'
+      withdrawal.adminNote = adminNote
+      await withdrawal.save()
+      
+      res.json({ message: 'Withdrawal rejected and money returned', withdrawal })
+    }
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

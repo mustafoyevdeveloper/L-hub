@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { api } from '@/lib/api'
+import { api, endpoints } from '@/lib/api'
 import Seo from '@/components/Seo'
 import { Video, Play, Car, Mic } from 'lucide-react'
 

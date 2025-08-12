@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
-import { api } from '@/lib/api'
+import { api, endpoints } from '@/lib/api'
 import Seo from '@/components/Seo'
 import { Newspaper, Megaphone, FileText, HelpCircle, Calendar, Clock } from 'lucide-react'
 

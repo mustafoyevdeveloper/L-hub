@@ -113,4 +113,66 @@ export async function getWithdrawals(req, res) {
   }
 }
 
+export async function deposit(req, res) {
+  try {
+    const { amount, currency } = req.body
+    
+    if (!amount || !currency) {
+      return res.status(400).json({ error: 'Amount and currency are required' })
+    }
+    
+    let wallet = await Wallet.findOne({ userId: req.user._id, currency })
+    if (!wallet) {
+      wallet = await Wallet.create({
+        userId: req.user._id,
+        currency,
+        balance: 0
+      })
+    }
+    
+    wallet.balance += parseFloat(amount)
+    await wallet.save()
+    
+    // Create transaction record
+    await Transaction.create({
+      userId: req.user._id,
+      type: 'DEPOSIT',
+      amount: parseFloat(amount),
+      currency,
+      status: 'COMPLETED',
+      description: 'Manual deposit'
+    })
+    
+    res.json({ message: 'Deposit successful', wallet })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export async function withdraw(req, res) {
+  try {
+    const { amount, currency } = req.body
+    
+    if (!amount || !currency) {
+      return res.status(400).json({ error: 'Amount and currency are required' })
+    }
+    
+    const wallet = await Wallet.findOne({ userId: req.user._id, currency })
+    if (!wallet || wallet.balance < amount) {
+      return res.status(400).json({ error: 'Insufficient balance' })
+    }
+    
+    const withdrawal = await Withdrawal.create({
+      userId: req.user._id,
+      amount,
+      currency,
+      status: 'PENDING'
+    })
+    
+    res.json(withdrawal)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 
