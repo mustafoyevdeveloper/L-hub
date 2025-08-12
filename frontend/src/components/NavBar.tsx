@@ -38,6 +38,8 @@ const NavBar: React.FC = () => {
             <Link to="/plans"><Button variant="outline" size="sm">Tariflar</Button></Link>
             <Link to="/minigames"><Button variant="outline" size="sm">Mini-o‘yinlar</Button></Link>
             <Link to="/support"><Button variant="outline" size="sm">Support</Button></Link>
+            <Link to="/kyc"><Button variant="outline" size="sm">KYC</Button></Link>
+            <Link to="/rng"><Button variant="outline" size="sm">RNG</Button></Link>
           </div>
 
           {/* Lang + theme + profile (profile after theme) */}
@@ -113,6 +115,12 @@ const NavBar: React.FC = () => {
                   </SheetClose>
                   <SheetClose asChild>
                     <Link to="/support"><Button variant="ghost" className="w-full justify-start">Support</Button></Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link to="/kyc"><Button variant="ghost" className="w-full justify-start">KYC</Button></Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <Link to="/rng"><Button variant="ghost" className="w-full justify-start">RNG</Button></Link>
                   </SheetClose>
                   {!token ? (
                     <SheetClose asChild>

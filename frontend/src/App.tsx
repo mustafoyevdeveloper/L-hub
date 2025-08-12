@@ -16,6 +16,8 @@ import NewsPage from "./pages/News";
 import PlansPage from "./pages/Plans";
 import MiniGamesPage from "./pages/MiniGames";
 import SupportPage from "./pages/Support";
+import KYCPage from "./pages/KYC";
+import RNGVerificationPage from "./pages/RNGVerification";
 import NotFound from "./pages/NotFound";
 import NavBar from "./components/NavBar";
 import { I18nProvider } from "./i18n/I18nProvider";
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/plans" element={<PlansPage />} />
             <Route path="/minigames" element={<MiniGamesPage />} />
             <Route path="/support" element={<SupportPage />} />
+            <Route path="/kyc" element={<KYCPage />} />
+            <Route path="/rng" element={<RNGVerificationPage />} />
             <Route
               path="/admin"
               element={
