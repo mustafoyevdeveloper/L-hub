@@ -29,7 +29,7 @@ const Dashboard = () => {
     (async () => {
       try {
         if (!token) return;
-        const me = await api<{ user: any; wallets: { balance: number }[] }>("/api/me", { token });
+        const me = await api<{ user: any; wallets: { balance: number }[] }>(endpoints.me, { token });
         setBalance(me.wallets.reduce((s, w) => s + (w.balance || 0), 0));
         // tickets count could be fetched via separate endpoint; keep demo value 0 for now
       } catch {}

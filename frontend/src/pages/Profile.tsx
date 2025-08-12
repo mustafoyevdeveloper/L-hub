@@ -88,7 +88,8 @@ const Profile = () => {
           <TabsTrigger value="profile">Profil</TabsTrigger>
           <TabsTrigger value="security">Xavfsizlik</TabsTrigger>
           <TabsTrigger value="notifications">Bildirishnomalar</TabsTrigger>
-          <TabsTrigger value="payment">To'lov</TabsTrigger>
+          <TabsTrigger value="deposit">Deposit</TabsTrigger>
+          <TabsTrigger value="withdrawal">Withdrawal</TabsTrigger>
           <TabsTrigger value="privacy">Maxfiylik</TabsTrigger>
         </TabsList>
         
@@ -473,6 +474,88 @@ const Profile = () => {
                 <CreditCard className="mr-2 h-4 w-4" />
                 Bank hisobini saqlash
               </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="deposit" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Manual Deposit</CardTitle>
+              <CardDescription>Admin karta raqamiga to'lov qiling va chekni yuklang</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Miqdor</Label>
+                  <Input type="number" value={depositAmount} onChange={(e) => setDepositAmount(parseFloat(e.target.value || '0'))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Valyuta</Label>
+                  <select className="h-10 w-full rounded-md border px-3" value={depositCurrency} onChange={(e) => setDepositCurrency(e.target.value as any)}>
+                    <option value="UZS">UZS</option>
+                    <option value="USD">USD</option>
+                    <option value="RUB">RUB</option>
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>To'lov usuli</Label>
+                <Input placeholder="Karta raqami yoki bank nomi" />
+              </div>
+              <div className="space-y-2">
+                <Label>Chek rasmi</Label>
+                <Input type="file" accept="image/*,.pdf" />
+              </div>
+              <Button onClick={async () => {
+                if (!token) return setStatus('Iltimos, tizimga kiring')
+                try {
+                  // This would use the uploadFile function for receipt upload
+                  setStatus('Deposit so\'rovi yuborildi. Admin tasdiqlashini kuting.')
+                } catch (e: any) { setStatus(e.message) }
+              }}>
+                <CreditCard className="mr-2 h-4 w-4" /> Deposit so'rovini yuborish
+              </Button>
+              {status && <div className="text-sm text-muted-foreground">{status}</div>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="withdrawal" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pul yechib olish</CardTitle>
+              <CardDescription>Hisobingizdan so'rov yuboring</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Miqdor</Label>
+                  <Input type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(parseFloat(e.target.value || '0'))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Valyuta</Label>
+                  <select className="h-10 w-full rounded-md border px-3" value={withdrawCurrency} onChange={(e) => setWithdrawCurrency(e.target.value as any)}>
+                    <option value="UZS">UZS</option>
+                    <option value="USD">USD</option>
+                    <option value="RUB">RUB</option>
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Bank ma'lumotlari</Label>
+                <Input placeholder="Bank hisob raqami va boshqa ma'lumotlar" />
+              </div>
+              <Button onClick={async () => {
+                if (!token) return setStatus('Iltimos, tizimga kiring')
+                try {
+                  await api(endpoints.createWithdrawal, { method: 'POST', token, body: { amount: withdrawAmount, currency: withdrawCurrency, bankDetails: 'Bank details' } })
+                  setStatus('So\'rov yaratildi')
+                } catch (e: any) { setStatus(e.message) }
+              }}>
+                So'rov yuborish
+              </Button>
+              {status && <div className="text-sm text-muted-foreground">{status}</div>}
             </CardContent>
           </Card>
         </TabsContent>

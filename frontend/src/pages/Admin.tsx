@@ -25,16 +25,37 @@ const Admin = () => {
   const { t } = useI18n();
   const { token } = useAuth();
   const [rounds, setRounds] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({});
   const currentDraw = rounds.find((r) => r.status === 'ACTIVE') || rounds[0] || { id: '—', status: 'PLANNED', ticketsSold: 0, maxPlayers: 0, endTime: null, jackpots: 0 };
+
+  const activateRound = async (roundId: string) => {
+    try {
+      await api(endpoints.activateRound(roundId), {
+        method: 'POST',
+        token,
+      });
+      // Refresh rounds
+      const data = await api<any[]>(endpoints.rounds);
+      setRounds(data);
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
 
   useEffect(() => {
     (async () => {
       try {
         const data = await api<any[]>(endpoints.rounds);
         setRounds(data);
+        
+        // Fetch admin stats
+        if (token) {
+          const statsData = await api<any>(endpoints.adminStats, { token });
+          setStats(statsData);
+        }
       } catch {}
     })();
-  }, []);
+  }, [token]);
 
   return (
     <main className="container mx-auto space-y-6 p-4 md:p-6">
@@ -66,7 +87,7 @@ const Admin = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12,486</div>
+            <div className="text-2xl font-bold">{stats.totalUsers || 0}</div>
             <p className="text-xs text-muted-foreground">+8.2% o'tgan oydan</p>
           </CardContent>
         </Card>
@@ -77,7 +98,7 @@ const Admin = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$24,580</div>
+            <div className="text-2xl font-bold">${(stats.totalRevenue || 0).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">+12.5% kechadan</p>
           </CardContent>
         </Card>
@@ -88,7 +109,7 @@ const Admin = () => {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2,450</div>
+            <div className="text-2xl font-bold">{stats.activeRounds || 0}</div>
             <p className="text-xs text-muted-foreground">Joriy undiruvda</p>
           </CardContent>
         </Card>

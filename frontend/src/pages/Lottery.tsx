@@ -114,10 +114,13 @@ const Lottery = () => {
     try {
       if (!currentRound) throw new Error("Round topilmadi")
       for (let i = 0; i < ticketCount; i++) {
-        await api(endpoints.buyTicket(currentRound.id), {
+        await api(endpoints.buyTicket, {
           method: "POST",
           token,
-          body: { numbers: selectedNumbers },
+          body: { 
+            roundId: currentRound.id,
+            numbers: selectedNumbers.join(',') 
+          },
         });
       }
       alert("Bilet(lar) muvaffaqiyatli sotib olindi");

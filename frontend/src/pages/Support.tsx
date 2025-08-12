@@ -103,7 +103,7 @@ export default function SupportPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!category || !contact || !subject || !message) {
+    if (!category || !subject || !message) {
       setSubmitStatus('error')
       return
     }
@@ -112,8 +112,12 @@ export default function SupportPage() {
     setSubmitStatus('idle')
 
     try {
-      // TODO: Implement actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      // TODO: Implement actual API call with authentication
+      // await api(endpoints.createSupportTicket, {
+      //   method: 'POST',
+      //   token: userToken,
+      //   body: { subject, message, category }
+      // })
       
       // Reset form
       setCategory('')

@@ -31,7 +31,7 @@ export default function NewsPage() {
       setLoading(true)
       setError(null)
       try { 
-        const data = await api<News[]>('/api/news')
+        const data = await api<News[]>(endpoints.news)
         // Demo data for rich content
         const demoNews: News[] = [
           { id: '1', title: 'Yangi raund boshlanmoqda!', body: 'Round #1235 2024-yil 20-yanvar kuni soat 18:00 da boshlanadi. Entry fee: 50,000 UZS. Maksimal ishtirokchilar: 5,000 kishi.', category: 'ANNOUNCEMENT', publishedAt: new Date('2024-01-16') },

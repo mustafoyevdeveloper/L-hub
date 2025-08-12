@@ -30,7 +30,7 @@ export default function VideosPage() {
       setLoading(true)
       setError(null)
       try { 
-        const data = await api<Video[]>('/api/videos')
+        const data = await api<Video[]>(endpoints.videos)
         // Demo data for rich content
         const demoVideos: Video[] = [
           { id: '1', title: 'Round #1234 - Livestream', url: 'https://youtube.com/watch?v=demo1', kind: 'LIVESTREAM', publishedAt: new Date('2024-01-15') },
