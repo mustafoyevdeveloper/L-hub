@@ -37,8 +37,11 @@ export async function api<T>(
 
 export const endpoints = {
   // Auth
-  register: '/api/auth/register',
+  registerRequest: '/api/auth/register/request',
+  registerVerify: '/api/auth/register/verify',
   login: '/api/auth/login',
+  forgotPassword: '/api/auth/password/forgot',
+  resetPassword: '/api/auth/password/reset',
   
   // User
   me: '/api/me',

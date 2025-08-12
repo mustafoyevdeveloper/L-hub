@@ -15,6 +15,7 @@ export const enums = {
   KYCStatus: ['PENDING', 'VERIFIED', 'REJECTED'],
   KYCDocumentType: ['PASSPORT', 'ID_CARD', 'DRIVERS_LICENSE'],
   AuditLogAction: ['LOGIN', 'LOGOUT', 'DEPOSIT', 'WITHDRAWAL', 'TICKET_PURCHASE', 'ADMIN_ACTION'],
+  VerificationPurpose: ['REGISTER', 'RESET_PASSWORD'],
 }
 
 const UserSchema = new Schema({
@@ -32,6 +33,16 @@ const UserSchema = new Schema({
   lastLoginAt: Date,
   loginAttempts: { type: Number, default: 0 },
   blockedUntil: Date,
+}, { timestamps: true })
+
+// Auth and verification
+const VerificationCodeSchema = new Schema({
+  email: { type: String, required: true, index: true },
+  code: { type: String, required: true },
+  purpose: { type: String, enum: enums.VerificationPurpose, required: true, index: true },
+  expiresAt: { type: Date, required: true, index: true },
+  used: { type: Boolean, default: false, index: true },
+  payload: Schema.Types.Mixed, // stores temp data for registration
 }, { timestamps: true })
 
 const WalletSchema = new Schema({
@@ -262,5 +273,6 @@ export const RateLimit = mongoose.models.RateLimit || model('RateLimit', RateLim
 export const RNGSeed = mongoose.models.RNGSeed || model('RNGSeed', RNGSeedSchema)
 export const RNGLog = mongoose.models.RNGLog || model('RNGLog', RNGLogSchema)
 export const DepositRequest = mongoose.models.DepositRequest || model('DepositRequest', DepositRequestSchema)
+export const VerificationCode = mongoose.models.VerificationCode || model('VerificationCode', VerificationCodeSchema)
 
 

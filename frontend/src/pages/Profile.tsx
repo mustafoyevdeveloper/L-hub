@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import Seo from "@/components/Seo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,21 +18,48 @@ import {
   Bell,
   Key,
   Download,
-  Upload
+  Upload,
+  Save,
+  Loader2
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+
+interface UserProfile {
+  _id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  username: string;
+  country: string;
+  avatar?: string;
+  verified: boolean;
+  twoFactor: boolean;
+  createdAt: string;
+}
 
 const Profile = () => {
   const { t } = useI18n();
-  const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 234 567 8900",
+  const { token, user, isLoading: authLoading } = useAuth();
+  const { toast } = useToast();
+  
+  const [profile, setProfile] = useState<UserProfile>({
+    _id: "",
+    fullName: "",
+    email: "",
+    phone: "",
+    username: "",
+    country: "",
     avatar: "",
-    verified: true,
-    twoFactor: false
+    verified: false,
+    twoFactor: false,
+    createdAt: ""
   });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
 
   const [notifications, setNotifications] = useState({
     email: true,
@@ -43,12 +70,174 @@ const Profile = () => {
     promotions: true
   });
 
-  const { token } = useAuth();
   const [depositAmount, setDepositAmount] = useState(0);
   const [depositCurrency, setDepositCurrency] = useState<'UZS'|'USD'|'RUB'>('UZS');
   const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [withdrawCurrency, setWithdrawCurrency] = useState<'UZS'|'USD'|'RUB'>('UZS');
   const [status, setStatus] = useState<string | null>(null);
+
+  // User ma'lumotlarini yuklash
+  useEffect(() => {
+    if (token) {
+      loadUserProfile();
+    } else {
+      // Agar user ro'yxatdan o'tmagan bo'lsa, loading'ni o'chir
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  // User ma'lumotlarini API'dan olish
+  const loadUserProfile = async () => {
+    try {
+      setIsLoading(true);
+      const userData = await api('/api/user/me', { token });
+      
+      if (userData) {
+        setProfile({
+          _id: userData._id || "",
+          fullName: userData.fullName || "",
+          email: userData.email || "",
+          phone: userData.phone || "",
+          username: userData.username || userData.email?.split('@')[0] || "",
+          country: userData.country || "",
+          avatar: userData.avatar || "",
+          verified: userData.verified || false,
+          twoFactor: userData.twoFactor || false,
+          createdAt: userData.createdAt || ""
+        });
+        setHasChanges(false);
+      }
+    } catch (error) {
+      console.error('Profile yuklashda xatolik:', error);
+      toast({
+        title: "Xatolik",
+        description: "Profil ma'lumotlari yuklanmadi",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Input o'zgarishlarini kuzatish
+  const handleInputChange = (field: keyof UserProfile, value: string) => {
+    setProfile(prev => ({ ...prev, [field]: value }));
+    setHasChanges(true);
+  };
+
+  // Profil ma'lumotlarini saqlash
+  const handleSaveProfile = async () => {
+    try {
+      setIsSaving(true);
+      
+      const response = await api('/api/user/profile', {
+        method: 'PUT',
+        body: {
+          fullName: profile.fullName,
+          phone: profile.phone,
+          country: profile.country
+        },
+        token
+      });
+
+      if (response) {
+        toast({
+          title: "Muvaffaqiyatli",
+          description: "Profil ma'lumotlari saqlandi"
+        });
+        setHasChanges(false);
+        await loadUserProfile(); // Yangilangan ma'lumotlarni yuklash
+      }
+    } catch (error) {
+      console.error('Profil saqlashda xatolik:', error);
+      toast({
+        title: "Xatolik",
+        description: "Profil ma'lumotlari saqlanmadi",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Avatar yuklash
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await api('/api/user/avatar', {
+        method: 'POST',
+        body: formData,
+        token,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response?.avatar) {
+        setProfile(prev => ({ ...prev, avatar: response.avatar }));
+        toast({
+          title: "Muvaffaqiyatli",
+          description: "Avatar yangilandi"
+        });
+      }
+    } catch (error) {
+      console.error('Avatar yuklashda xatolik:', error);
+      toast({
+        title: "Xatolik",
+        description: "Avatar yuklanmadi",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Auth loading tugaguncha loading ko'rsatish
+  if (authLoading) {
+    return (
+      <main className="container mx-auto space-y-6 p-4 md:p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Auth yuklanmoqda...</span>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <main className="container mx-auto space-y-6 p-4 md:p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Profil yuklanmoqda...</span>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Agar user ro'yxatdan o'tmagan bo'lsa
+  if (!token) {
+    return (
+      <main className="container mx-auto space-y-6 p-4 md:p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">Profil paneliga kirish uchun ro'yxatdan o'ting</h2>
+            <p className="text-muted-foreground">Profil ma'lumotlarini ko'rish uchun avval tizimga kiring</p>
+            <Button asChild>
+              <a href="/auth">Ro'yxatdan o'tish</a>
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="container mx-auto space-y-6 p-4 md:p-6">
@@ -59,11 +248,11 @@ const Profile = () => {
         <Avatar className="h-20 w-20">
           <AvatarImage src={profile.avatar} />
           <AvatarFallback className="text-lg">
-            {profile.name.split(' ').map(n => n[0]).join('')}
+            {profile.fullName.split(' ').map(n => n[0]).join('')}
           </AvatarFallback>
         </Avatar>
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">{profile.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{profile.fullName}</h1>
           <p className="text-muted-foreground">{profile.email}</p>
           <div className="flex gap-2">
             {profile.verified && (
@@ -102,11 +291,12 @@ const Profile = () => {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">To'liq ism</Label>
+                  <Label htmlFor="fullName">To'liq ism</Label>
                   <Input
-                    id="name"
-                    value={profile.name}
-                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                    id="fullName"
+                    value={profile.fullName}
+                    onChange={(e) => handleInputChange('fullName', e.target.value)}
+                    placeholder="To'liq ismingizni kiriting"
                   />
                 </div>
                 <div className="space-y-2">
@@ -115,8 +305,10 @@ const Profile = () => {
                     id="email"
                     type="email"
                     value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                    disabled
+                    className="bg-muted"
                   />
+                  <p className="text-xs text-muted-foreground">Email manzil o'zgartirilmaydi</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Telefon raqam</Label>
@@ -124,27 +316,63 @@ const Profile = () => {
                     id="phone"
                     type="tel"
                     value={profile.phone}
-                    onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="+998 90 123 45 67"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username">Foydalanuvchi nomi</Label>
                   <Input
                     id="username"
-                    value="johndoe123"
+                    value={profile.username}
                     disabled
+                    className="bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">Foydalanuvchi nomi avtomatik yaratilgan</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Mamlakat</Label>
+                  <Input
+                    id="country"
+                    value={profile.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
+                    placeholder="Mamlakat"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Ro'yxatdan o'tish sanasi</Label>
+                  <Input
+                    value={new Date(profile.createdAt).toLocaleDateString('uz-UZ')}
+                    disabled
+                    className="bg-muted"
                   />
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button>
-                  <User className="mr-2 h-4 w-4" />
-                  O'zgarishlarni saqlash
+                <Button 
+                  onClick={handleSaveProfile}
+                  disabled={!hasChanges || isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  {isSaving ? 'Saqlanmoqda...' : 'O\'zgarishlarni saqlash'}
                 </Button>
-                <Button variant="outline">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Avatar yuklash
+                <Button variant="outline" asChild>
+                  <label htmlFor="avatar-upload">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Avatar yuklash
+                  </label>
                 </Button>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
             </CardContent>
           </Card>

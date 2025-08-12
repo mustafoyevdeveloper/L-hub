@@ -15,7 +15,12 @@ const langs: { code: Lang; label: string }[] = [
 
 const NavBar: React.FC = () => {
   const { lang, setLang, t } = useI18n();
-  const { token, user, logout } = useAuth();
+  const { token, user, logout, isLoading } = useAuth();
+
+  // Loading holatida navbar'ni ko'rsatmaslik
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">

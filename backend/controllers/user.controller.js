@@ -21,10 +21,11 @@ export async function getMe(req, res) {
 
 export async function updateProfile(req, res) {
   try {
-    const { fullName, country } = req.body
+    const { fullName, phone, country } = req.body
     const updates = {}
     
     if (fullName) updates.fullName = fullName
+    if (phone) updates.phone = phone
     if (country) updates.country = country
     
     const user = await User.findByIdAndUpdate(
@@ -170,6 +171,26 @@ export async function withdraw(req, res) {
     })
     
     res.json(withdrawal)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export async function uploadAvatar(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' })
+    }
+    
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`
+    
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatar: avatarUrl },
+      { new: true, runValidators: true }
+    ).select('-passwordHash')
+    
+    res.json({ avatar: avatarUrl, user })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

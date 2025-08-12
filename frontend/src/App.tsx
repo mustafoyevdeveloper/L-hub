@@ -24,6 +24,7 @@ import { I18nProvider } from "./i18n/I18nProvider";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
 import AuthPage from "./pages/Auth";
 import BackgroundOrnaments from "./components/BackgroundOrnaments";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,55 @@ function AdminRoute({ children }: { children: JSX.Element }) {
   return children;
 }
 
+function AppContent() {
+  const { isLoading } = useAuth();
+
+  // Auth loading tugaguncha loading ko'rsatish
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="text-lg">Yuklanmoqda...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <BackgroundOrnaments />
+      <NavBar />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/lottery" element={<Lottery />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/rules" element={<RulesPage />} />
+        <Route path="/archive" element={<ArchiveRoundsPage />} />
+        <Route path="/videos" element={<VideosPage />} />
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/plans" element={<PlansPage />} />
+        <Route path="/minigames" element={<MiniGamesPage />} />
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/kyc" element={<KYCPage />} />
+        <Route path="/rng" element={<RNGVerificationPage />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          }
+        />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -40,34 +90,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BackgroundOrnaments />
-          <NavBar />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/lottery" element={<Lottery />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/rules" element={<RulesPage />} />
-            <Route path="/archive" element={<ArchiveRoundsPage />} />
-            <Route path="/videos" element={<VideosPage />} />
-            <Route path="/news" element={<NewsPage />} />
-            <Route path="/plans" element={<PlansPage />} />
-            <Route path="/minigames" element={<MiniGamesPage />} />
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/kyc" element={<KYCPage />} />
-            <Route path="/rng" element={<RNGVerificationPage />} />
-            <Route
-              path="/admin"
-              element={
-                <AdminRoute>
-                  <Admin />
-                </AdminRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppContent />
         </TooltipProvider>
       </I18nProvider>
     </AuthProvider>
