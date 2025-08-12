@@ -73,4 +73,49 @@ const translations: Dict = {
   "dashboard.history": { uz: "Tarix", ru: "История", en: "History" },
   "dashboard.payments": { uz: "To'lovlar", ru: "Платежи", en: "Payments" },
   "dashboard.currentDraw": { uz: "Joriy undiruv", ru: "Текущий тираж", en: "Current draw" },
-  
+  "dashboard.drawEnds": { uz: "Tugashiga", ru: "Окончание через", en: "Ends in" },
+  "dashboard.jackpot": { uz: "Jekpot", ru: "Джекпот", en: "Jackpot" },
+  "dashboard.buyTicket": { uz: "Bilet sotib olish", ru: "Купить билет", en: "Buy ticket" },
+  "dashboard.quickPick": { uz: "Tez tanlov", ru: "Быстрый выбор", en: "Quick pick" },
+  "dashboard.recentWins": { uz: "So'nggi yutuqlar", ru: "Последние выигрыши", en: "Recent wins" },
+  "lottery.title": { uz: "Lottery", ru: "Лотерея", en: "Lottery" },
+  "lottery.description": { uz: "Onlayn lottery o'yini", ru: "Онлайн лотерея", en: "Online lottery game" },
+};
+
+interface I18nContextValue {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (key: keyof typeof translations) => string;
+}
+
+const I18nContext = createContext<I18nContextValue | undefined>(undefined);
+
+const STORAGE_KEY = "app_lang";
+
+export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [lang, setLangState] = useState<Lang>("uz");
+
+  useEffect(() => {
+    const saved = (localStorage.getItem(STORAGE_KEY) as Lang | null) || "uz";
+    setLangState(saved);
+  }, []);
+
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    localStorage.setItem(STORAGE_KEY, l);
+  };
+
+  const value = useMemo<I18nContextValue>(() => ({
+    lang,
+    setLang,
+    t: (key) => translations[key]?.[lang] ?? String(key),
+  }), [lang]);
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+};
+
+export const useI18n = () => {
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error("useI18n must be used within I18nProvider");
+  return ctx;
+};

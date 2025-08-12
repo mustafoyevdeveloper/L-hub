@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import Seo from "@/components/Seo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,24 +18,30 @@ import {
   Pause,
   RotateCcw
 } from "lucide-react";
+import { api, endpoints } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 
 const Admin = () => {
   const { t } = useI18n();
-  const [currentDraw] = useState({
-    id: 1246,
-    status: "active",
-    jackpot: 125000,
-    ticketsSold: 2450,
-    maxTickets: 3200,
-    endTime: "2024-01-16T20:00:00"
-  });
+  const { token } = useAuth();
+  const [rounds, setRounds] = useState<any[]>([]);
+  const currentDraw = rounds.find((r) => r.status === 'ACTIVE') || rounds[0] || { id: '—', status: 'PLANNED', ticketsSold: 0, maxPlayers: 0, endTime: null, jackpots: 0 };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api<any[]>(endpoints.rounds);
+        setRounds(data);
+      } catch {}
+    })();
+  }, []);
 
   return (
-    <main className="container mx-auto space-y-6 p-6">
+    <main className="container mx-auto space-y-6 p-4 md:p-6">
       <Seo title={`Admin Panel | ${t("brand")}`} description="Lottery admin dashboard" />
       
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
           <p className="text-muted-foreground">Lottery tizimini boshqarish paneli</p>

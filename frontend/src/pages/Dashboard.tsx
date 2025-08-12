@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import Seo from "@/components/Seo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,18 +16,32 @@ import {
   History,
   Settings
 } from "lucide-react";
+import { api, endpoints } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 
 const Dashboard = () => {
   const { t } = useI18n();
-  const [balance] = useState(1250.75);
-  const [tickets] = useState(12);
+  const { token } = useAuth();
+  const [balance, setBalance] = useState(0);
+  const [tickets, setTickets] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!token) return;
+        const me = await api<{ user: any; wallets: { balance: number }[] }>("/api/me", { token });
+        setBalance(me.wallets.reduce((s, w) => s + (w.balance || 0), 0));
+        // tickets count could be fetched via separate endpoint; keep demo value 0 for now
+      } catch {}
+    })();
+  }, [token]);
 
   return (
-    <main className="container mx-auto space-y-6 p-6">
+    <main className="container mx-auto space-y-6 p-4 md:p-6">
       <Seo title={`${t("dashboard.title")} | ${t("brand")}`} description={t("dashboard.description")} />
       
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.welcome")}</h1>
           <p className="text-muted-foreground">{t("dashboard.subtitle")}</p>
@@ -53,7 +67,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${balance.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">+2.5% {t("dashboard.fromLast")}</p>
+             <p className="text-xs text-muted-foreground">+2.5% {t("dashboard.fromLast")}</p>
           </CardContent>
         </Card>
         

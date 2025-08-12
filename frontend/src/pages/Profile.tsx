@@ -20,6 +20,8 @@ import {
   Download,
   Upload
 } from "lucide-react";
+import { api } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 
 const Profile = () => {
   const { t } = useI18n();
@@ -41,8 +43,15 @@ const Profile = () => {
     promotions: true
   });
 
+  const { token } = useAuth();
+  const [depositAmount, setDepositAmount] = useState(0);
+  const [depositCurrency, setDepositCurrency] = useState<'UZS'|'USD'|'RUB'>('UZS');
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
+  const [withdrawCurrency, setWithdrawCurrency] = useState<'UZS'|'USD'|'RUB'>('UZS');
+  const [status, setStatus] = useState<string | null>(null);
+
   return (
-    <main className="container mx-auto space-y-6 p-6">
+    <main className="container mx-auto space-y-6 p-4 md:p-6">
       <Seo title={`Profil | ${t("brand")}`} description="Foydalanuvchi profili sozlamalari" />
       
       {/* Header */}
@@ -342,6 +351,70 @@ const Profile = () => {
         </TabsContent>
         
         <TabsContent value="payment" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Balansni to‘ldirish</CardTitle>
+              <CardDescription>UZS, USD yoki RUB</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Miqdor</Label>
+                  <Input type="number" value={depositAmount} onChange={(e) => setDepositAmount(parseFloat(e.target.value || '0'))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Valyuta</Label>
+                  <select className="h-10 w-full rounded-md border px-3" value={depositCurrency} onChange={(e) => setDepositCurrency(e.target.value as any)}>
+                    <option value="UZS">UZS</option>
+                    <option value="USD">USD</option>
+                    <option value="RUB">RUB</option>
+                  </select>
+                </div>
+              </div>
+              <Button onClick={async () => {
+                if (!token) return setStatus('Iltimos, tizimga kiring')
+                try {
+                  await api('/api/transactions/deposit', { method: 'POST', token, body: { amount: depositAmount, currency: depositCurrency, method: 'CARD' } })
+                  setStatus('Balans to‘ldirildi')
+                } catch (e: any) { setStatus(e.message) }
+              }}>
+                <CreditCard className="mr-2 h-4 w-4" /> To‘ldirish
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pul yechib olish</CardTitle>
+              <CardDescription>Hisobingizdan so‘rov yuboring</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Miqdor</Label>
+                  <Input type="number" value={withdrawAmount} onChange={(e) => setWithdrawAmount(parseFloat(e.target.value || '0'))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Valyuta</Label>
+                  <select className="h-10 w-full rounded-md border px-3" value={withdrawCurrency} onChange={(e) => setWithdrawCurrency(e.target.value as any)}>
+                    <option value="UZS">UZS</option>
+                    <option value="USD">USD</option>
+                    <option value="RUB">RUB</option>
+                  </select>
+                </div>
+              </div>
+              <Button onClick={async () => {
+                if (!token) return setStatus('Iltimos, tizimga kiring')
+                try {
+                  await api('/api/withdrawals', { method: 'POST', token, body: { amount: withdrawAmount, currency: withdrawCurrency } })
+                  setStatus('So‘rov yaratildi')
+                } catch (e: any) { setStatus(e.message) }
+              }}>
+                So‘rov yuborish
+              </Button>
+              {status && <div className="text-sm text-muted-foreground">{status}</div>}
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>To'lov usullari</CardTitle>

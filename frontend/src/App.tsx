@@ -9,11 +9,19 @@ import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import Lottery from "./pages/Lottery";
 import Profile from "./pages/Profile";
+import RulesPage from "./pages/Rules";
+import ArchiveRoundsPage from "./pages/ArchiveRounds";
+import VideosPage from "./pages/Videos";
+import NewsPage from "./pages/News";
+import PlansPage from "./pages/Plans";
+import MiniGamesPage from "./pages/MiniGames";
+import SupportPage from "./pages/Support";
 import NotFound from "./pages/NotFound";
 import NavBar from "./components/NavBar";
 import { I18nProvider } from "./i18n/I18nProvider";
 import { AuthProvider, useAuth } from "./hooks/use-auth";
 import AuthPage from "./pages/Auth";
+import BackgroundOrnaments from "./components/BackgroundOrnaments";
 
 const queryClient = new QueryClient();
 
@@ -30,9 +38,36 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <BackgroundOrnaments />
           <NavBar />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/lotter
+            <Route path="/lottery" element={<Lottery />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/rules" element={<RulesPage />} />
+            <Route path="/archive" element={<ArchiveRoundsPage />} />
+            <Route path="/videos" element={<VideosPage />} />
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/plans" element={<PlansPage />} />
+            <Route path="/minigames" element={<MiniGamesPage />} />
+            <Route path="/support" element={<SupportPage />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <Admin />
+                </AdminRoute>
+              }
+            />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </I18nProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
+
+export default App;

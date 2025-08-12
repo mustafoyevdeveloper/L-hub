@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/I18nProvider";
 import Seo from "@/components/Seo";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,26 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { api, endpoints } from "@/lib/api";
 
+type Prize = {
+  id: string
+  type: "CAR" | "CASH" | "RUB_CASH" | "FREE_TICKET" | "POINTS"
+  amount?: number
+  currency?: "UZS" | "USD" | "RUB"
+  quantity: number
+}
+
+type Round = {
+  id: string
+  status: "PLANNED" | "ACTIVE" | "COMPLETED"
+  maxPlayers: number
+  entryFee: number
+  currency: "UZS" | "USD" | "RUB"
+  startsAt: string
+  endsAt?: string | null
+  tickets?: any[]
+  prizes: Prize[]
+}
+
 const Lottery = () => {
   const { t } = useI18n();
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
@@ -27,15 +47,24 @@ const Lottery = () => {
   const [quickPick, setQuickPick] = useState(false);
   const { token } = useAuth();
 
-  const currentDraw = {
-    id: 1246,
-    jackpot: 125000,
-    endTime: "2024-01-16T20:00:00",
-    ticketsSold: 2450,
-    maxTickets: 3200,
-    ticketPrice: 5,
-    nextDraw: "20:00 (UTC+5)"
-  };
+  const [rounds, setRounds] = useState<Round[]>([])
+  const [currentRound, setCurrentRound] = useState<Round | null>(null)
+  const [ticketsSold, setTicketsSold] = useState<number>(0)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await api<Round[]>(endpoints.rounds)
+        setRounds(data)
+        const active = data.find((r) => r.status === "ACTIVE") || data.at(-1) || null
+        setCurrentRound(active)
+        // Without separate count endpoint, approximate by prizes or leave 0
+        setTicketsSold(active?.tickets?.length ?? 0)
+      } catch (e) {
+        // ignore
+      }
+    })()
+  }, [])
 
   const toggleNumber = (num: number) => {
     if (selectedNumbers.includes(num)) {
@@ -62,7 +91,19 @@ const Lottery = () => {
     setQuickPick(false);
   };
 
-  const totalCost = ticketCount * currentDraw.ticketPrice;
+  const ticketPrice = currentRound?.entryFee ?? 0
+  const totalCost = ticketCount * ticketPrice;
+
+  const topPrize = (() => {
+    if (!currentRound) return null
+    let best: { amount: number; currency?: string } | null = null
+    for (const p of currentRound.prizes) {
+      if ((p.type === "CASH" || p.type === "RUB_CASH") && typeof p.amount === 'number') {
+        if (!best || p.amount > best.amount) best = { amount: p.amount, currency: p.currency }
+      }
+    }
+    return best
+  })()
 
   async function buyTicket() {
     if (!token) {
@@ -71,8 +112,9 @@ const Lottery = () => {
     }
     if (selectedNumbers.length !== 6) return;
     try {
+      if (!currentRound) throw new Error("Round topilmadi")
       for (let i = 0; i < ticketCount; i++) {
-        await api(endpoints.buyTicket("demo-round-id"), {
+        await api(endpoints.buyTicket(currentRound.id), {
           method: "POST",
           token,
           body: { numbers: selectedNumbers },
@@ -86,7 +128,7 @@ const Lottery = () => {
   }
 
   return (
-    <main className="container mx-auto space-y-6 p-6">
+    <main className="container mx-auto space-y-6 p-4 md:p-6">
       <Seo title={`${t("lottery.title")} | ${t("brand")}`} description={t("lottery.description")} />
       
       {/* Header */}
@@ -103,14 +145,14 @@ const Lottery = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl">Draw #{currentDraw.id}</CardTitle>
-                  <CardDescription>Keyingi undiruv: {currentDraw.nextDraw}</CardDescription>
+                   <CardTitle className="text-2xl">{currentRound ? `Draw #${currentRound.id.slice(0,6)}` : "Draw"}</CardTitle>
+                   <CardDescription>Holat: {currentRound?.status ?? '—'}</CardDescription>
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-primary">
-                    ${currentDraw.jackpot.toLocaleString()}
+                    {ticketPrice} {currentRound?.currency}
                   </div>
-                  <div className="text-sm text-muted-foreground">Jackpot</div>
+                  <div className="text-sm text-muted-foreground">Bilet narxi</div>
                 </div>
               </div>
             </CardHeader>
@@ -119,9 +161,9 @@ const Lottery = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Sotilgan biletlar</span>
-                    <span>{currentDraw.ticketsSold} / {currentDraw.maxTickets}</span>
+                    <span>{ticketsSold} / {currentRound?.maxPlayers ?? 0}</span>
                   </div>
-                  <Progress value={(currentDraw.ticketsSold / currentDraw.maxTickets) * 100} className="h-2" />
+                  <Progress value={currentRound ? (ticketsSold / (currentRound.maxPlayers || 1)) * 100 : 0} className="h-2" />
                 </div>
                 <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
@@ -130,7 +172,7 @@ const Lottery = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <DollarSign className="h-4 w-4" />
-                    <span>Bilet narxi: ${currentDraw.ticketPrice}</span>
+                    <span>Bilet narxi: {ticketPrice} {currentRound?.currency}</span>
                   </div>
                 </div>
               </div>
@@ -284,7 +326,7 @@ const Lottery = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Bilet narxi:</span>
-                    <span>${currentDraw.ticketPrice}</span>
+                    <span>{ticketPrice} {currentRound?.currency}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Biletlar soni:</span>
@@ -292,7 +334,7 @@ const Lottery = () => {
                   </div>
                   <div className="flex justify-between font-medium">
                     <span>Jami:</span>
-                    <span>${totalCost}</span>
+                    <span>{totalCost} {currentRound?.currency}</span>
                   </div>
                 </div>
 
@@ -307,7 +349,7 @@ const Lottery = () => {
                 </Button>
 
                 <div className="text-xs text-muted-foreground text-center">
-                  Minimum balans talab qilinadi: ${totalCost}
+                  Minimum balans talab qilinadi: {totalCost} {currentRound?.currency}
                 </div>
               </div>
             </CardContent>
@@ -326,7 +368,7 @@ const Lottery = () => {
                     <Trophy className="h-4 w-4 text-yellow-500" />
                     <span className="text-sm">6 ta raqam</span>
                   </div>
-                  <span className="text-sm font-medium">${currentDraw.jackpot.toLocaleString()}</span>
+                  <span className="text-sm font-medium">{topPrize ? `${topPrize.amount.toLocaleString()} ${topPrize.currency ?? ''}` : '—'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -354,4 +396,24 @@ const Lottery = () => {
           </Card>
 
           {/* Game Rules */}
-      
+          <Card>
+            <CardHeader>
+              <CardTitle>O'yin qoidalari</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>• 1-49 oralig'ida 6 ta raqam tanlang</p>
+                <p>• Minimum 3 ta raqam mos kelishi kerak</p>
+                <p>• Undiruvlar har kuni 20:00 da o'tkaziladi</p>
+                <p>• Yutuqlar avtomatik hisobga o'tkaziladi</p>
+                <p>• Maksimal 10 ta bilet sotib olish mumkin</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </main>
+  );
+};
+
+export default Lottery;

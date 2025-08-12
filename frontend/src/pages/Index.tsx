@@ -3,6 +3,7 @@ import Seo from "@/components/Seo";
 import { useI18n } from "@/i18n/I18nProvider";
 import heroImg from "@/assets/hero-lottery.jpg";
 import { ShieldCheck, CreditCard, Shuffle, LayoutDashboard, Languages, Bell } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const { t } = useI18n();
@@ -11,7 +12,7 @@ const Index = () => {
   const description = t("hero.subtitle");
 
   return (
-    <main>
+    <main className="px-4 md:px-0">
       <Seo title={title} description={description} image={heroImg} />
 
       <section className="container mx-auto mt-10 grid items-center gap-10 rounded-lg border bg-card p-6 md:grid-cols-2 md:p-10">
@@ -19,7 +20,7 @@ const Index = () => {
           <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{t("hero.title")}</h1>
           <p className="text-lg text-muted-foreground">{t("hero.subtitle")}</p>
           <div className="flex flex-wrap gap-3">
-            <Button variant="hero" size="lg">{t("cta.getStarted")}</Button>
+            <Button variant="hero" size="lg" asChild><Link to="/lottery">{t("cta.getStarted")}</Link></Button>
             <Button variant="outline" size="lg" asChild>
               <a href="#features">{t("cta.learnMore")}</a>
             </Button>

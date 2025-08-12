@@ -118,7 +118,7 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans overflow-x-hidden;
   }
 }
 
@@ -132,4 +132,15 @@ All colors MUST be HSL.
   .shadow-glow {
     box-shadow: var(--shadow-glow);
   }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: float 10s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0) scale(1); }
+  50% { transform: translateY(-10px) translateX(6px) scale(1.02); }
 }
