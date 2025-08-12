@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  fullName      String
+  country       String
+  role          Role     @default(USER)
+  isVip         Boolean  @default(false)
+  points        Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  wallets       Wallet[]
+  tickets       Ticket[]
+  withdrawals   WithdrawalRequest[]
+  subscriptions Subscription[]
+  supportTickets SupportTicket[]
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String
+  currency  Currency
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Round {
+  id           String   @id @default(cuid())
+  status       RoundStatus @default(PLANNED)
+  maxPlayers   Int      @default(5000)
+  entryFee     Float
+  currency     Currency
+  startsAt     DateTime
+  endsAt       DateTime?
+  tickets      Ticket[]
+  prizes       Prize[]
+  videoUrl     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Ticket {
+  id        String   @id @default(cuid())
+  userId    String
+  roundId   String
+  numbers   String   // CSV of 6 numbers
+  purchasedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  round     Round    @relation(fields: [roundId], references: [id])
+  reward    Reward?
+}
+
+model Reward {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  type      RewardType
+  amount    Float?   // money or points
+  currency  Currency?
+  createdAt DateTime @default(now())
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+}
+
+model Prize {
+  id        String   @id @default(cuid())
+  roundId   String
+  type      RewardType
+  amount    Float?   // money or points
+  currency  Currency?
+  quantity  Int
+  round     Round    @relation(fields: [roundId], references: [id])
+}
+
+model WithdrawalRequest {
+  id           String   @id @default(cuid())
+  userId       String
+  amount       Float
+  currency     Currency
+  status       WithdrawalStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model Subscription {
+  id           String   @id @default(cuid())
+  userId       String
+  type         SubscriptionType
+  price        Float
+  currency     Currency
+  validUntil   DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  userId    String?
+  subject   String
+  status    TicketStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?     @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Currency {
+  UZS
+  USD
+  RUB
+}
+
+enum RoundStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+enum RewardType {
+  CAR
+  CASH
+  RUB_CASH
+  FREE_TICKET
+  POINTS
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SubscriptionType {
+  STANDARD
+  VIP
+}
+
+enum TicketStatus {
+  OPEN
+  CLOSED
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  type      TransactionType
+  amount    Float
+  currency  Currency
+  method    String
+  status    TransactionStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum TransactionType {
+  DEPOSIT
+  PURCHASE
+  WITHDRAWAL
+  WIN
+  SUBSCRIPTION
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  title       String
+  url         String
+  kind        VideoKind
+  roundId     String?
+  publishedAt DateTime @default(now())
+  round       Round?   @relation(fields: [roundId], references: [id])
+}
+
+enum VideoKind {
+  LIVESTREAM
+  HANDOVER
+  INTERVIEW
+}
+
+model News {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  category    NewsCategory @default(NEWS)
+  publishedAt DateTime @default(now())
+}
+
+enum NewsCategory {
+  NEWS
+  ANNOUNCEMENT
+  RULES
+  FAQ
+}
+
+model MiniGame {
+  id          String   @id @default(cuid())
+  title       String
+  startsAt    DateTime
+  endsAt      DateTime
+  isActive    Boolean  @default(true)
+  subscriptionRequired Boolean @default(true)
+  sessions    MiniGameSession[]
+}
+
+model MiniGameSession {
+  id         String   @id @default(cuid())
+  miniGameId String
+  userId     String
+  pointsEarned Float
+  createdAt  DateTime @default(now())
+  miniGame   MiniGame @relation(fields: [miniGameId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model SettingKV {
+  key   String @id
+  value String
+}
+
+
